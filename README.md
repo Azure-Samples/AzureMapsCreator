@@ -47,5 +47,5 @@ Generated Map data saved to 'AzureMapData.json'
 Generated Map saved to 'Map.html'
 ```
 
-Once done, the process will save a `AzureMapsData.json` and `Maps.html` in the same folder as the script. To view the generated Map, simply open `Maps.html` in the browser. All the values returned by the Azure Maps Creator API is contained in the `AzureMapsData.json`
+Once done, the process will save a `AzureMapsData.json` and `Maps.html` in the same folder as the script. To view the generated Map, simply open `Maps.html` in the browser. All the values returned by the Azure Maps Creator APIs are contained in the `AzureMapsData.json`
 
