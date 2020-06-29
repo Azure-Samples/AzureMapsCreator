@@ -1,57 +1,54 @@
 # Project Name
 
-(short, 1-3 sentenced, description of the project)
+Azure Maps Creator Python script
 
 ## Features
 
 This project framework provides the following features:
 
-* Feature 1
-* Feature 2
-* ...
+* Uploads DWG files to Azure Maps Creator
 
 ## Getting Started
 
-### Prerequisites
 
-(ideally very short, if any)
+### **Please Note**: This script works with Python3
 
-- OS
-- Library version
-- ...
+# Installation
 
-### Installation
+1. Download Python3.6 via this [link](https://www.python.org/ftp/python/3.6.0/python-3.6.0-amd64.exe).
 
-(ideally very short)
+2. Run the downloaded installer. When the installer opens, remember to select the checkbox to add **Python to PATH**
 
-- npm install [package name]
-- mvn install
-- ...
+3. Once done, open **PowerShell** / **Command Line** and run the command `pip install requests`
 
-### Quickstart
-(Add steps to get up and running quickly)
+# Upload DWG Zip file
 
-1. git clone [repository clone url]
-2. cd [respository name]
-3. ...
+To upload your zipped `DWG` files to Azure Private Atlas, simply download and run the PowerShell script `DWGZipUploader.py` and parse the following arguments as seen below.
 
+```
+python DWGZipUploader.py --subscriptionKey YOUR_SUBSCRIPTION_KEY --zipFile PATH_TO_YOUR_ZIP_FILE
+```
 
-## Demo
+You should see a log like the one below if the process completes succesfully without errors.
 
-A demo app is included to show how to use the project.
+```
+Reading zip file...
+Uploading DWG Zip file...
+DWG Upload accepted.
+Checking upload status...
+DWG upload successful.
+Obtaining UDID...
+UDID obtained.
+Converting DWG...
+DWG Conversion started...
+DWG conversion successful
+Dataset generation started...
+Dataset generated successfully.
+Tileset generation started...
+Tileset generated successfully.
+Generated Map data saved to 'AzureMapData.json'
+Generated Map saved to 'Map.html'
+```
 
-To run the demo, follow these steps:
+Once done, the process will save a `AzureMapsData.json` and `Maps.html` in the same folder as the script. To view the generated Map, simply open `Maps.html` in the browser. All the values returned by the Private Atlas API is contained in the `AzureMapsData.json`
 
-(Add steps to start up the demo)
-
-1.
-2.
-3.
-
-## Resources
-
-(Any additional resources or related projects)
-
-- Link to supporting information
-- Link to similar sample
-- ...
