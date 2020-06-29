@@ -20,7 +20,7 @@ This project framework provides the following features:
 
 # Upload DWG Zip file
 
-To upload your zipped `DWG` files to Azure Private Atlas, simply download and run the PowerShell script `DWGZipUploader.py` and parse the following arguments as seen below.
+To upload your zipped `DWG` files to Azure Maps Creator, simply download and run the PowerShell script `DWGZipUploader.py` and parse the following arguments as seen below.
 
 ```
 python DWGZipUploader.py --subscriptionKey YOUR_SUBSCRIPTION_KEY --zipFile PATH_TO_YOUR_ZIP_FILE
@@ -47,5 +47,5 @@ Generated Map data saved to 'AzureMapData.json'
 Generated Map saved to 'Map.html'
 ```
 
-Once done, the process will save a `AzureMapsData.json` and `Maps.html` in the same folder as the script. To view the generated Map, simply open `Maps.html` in the browser. All the values returned by the Private Atlas API is contained in the `AzureMapsData.json`
+Once done, the process will save a `AzureMapsData.json` and `Maps.html` in the same folder as the script. To view the generated Map, simply open `Maps.html` in the browser. All the values returned by the Azure Maps Creator API is contained in the `AzureMapsData.json`
 
