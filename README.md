@@ -1,5 +1,3 @@
-# Project Name
-
 Azure Maps Creator Python script
 
 ## Features
@@ -9,7 +7,6 @@ This project framework provides the following features:
 * Uploads DWG files to Azure Maps Creator
 
 ## Getting Started
-
 
 ### **Please Note**: This script works with Python3
 
