@@ -5,7 +5,6 @@ import json
 import argparse
 from zipfile import ZipFile
 
-
 ap = argparse.ArgumentParser() 
 
 ap.add_argument("-s", "--subscriptionKey", required=True,
@@ -62,15 +61,15 @@ class MapsPipeline:
 # ============== UPLOAD FUNCTIONS ================
 
 def upload_dwg(pipeline, filepath):
-    upload_url = pipeline.base_url + "mapData/upload?api-version=1.0&dataFormat=zip&subscription-key=" + pipeline.subcriptionKey
+    upload_url = pipeline.base_url + "mapData?api-version=2.0&dataFormat=zip&subscription-key=" + pipeline.subcriptionKey
     data = open(filepath, 'rb').read()
     response = requests.post(url= upload_url ,
                         data=data,
                         headers={'Content-Type': 'application/octet-stream'})
-    
+
     if response.status_code == 202:
-        pipeline.ResultUploadOperationsLocation = response.headers["Location"].replace("atlas.", "us.atlas.")
-        print("DWG Upload accepted.")
+        pipeline.ResultUploadOperationsLocation = response.headers["Operation-Location"]
+        print("DWG Upload Started...")
     else:
         print("Upload failed with status code: ", response.status_code)
         exit()
@@ -82,8 +81,10 @@ def get_upload_status(pipeline):
     response_json = response.json()
 
     if response_json["status"] == "Succeeded":
-        pipeline.ResultUploadResourceLocation = response_json["resourceLocation"].replace("atlas.", "us.atlas.")
+        pipeline.ResultUploadResourceLocation = response.headers["Resource-Location"]
+        pipeline.ResultUploadUDID = pipeline.ResultUploadResourceLocation.split("/")[-1].split("?")[0]
         print("DWG upload successful.")
+        print("UDID: " + pipeline.ResultUploadUDID)
     elif response_json["status"] == "Failed":
         print("DWG Upload process failed.")
         exit()
@@ -92,26 +93,15 @@ def get_upload_status(pipeline):
         get_upload_status(pipeline)
     return pipeline
 
-
-def get_udid(pipeline):
-    response = requests.get(pipeline.ResultUploadResourceLocation + "&subscription-key=" + pipeline.subcriptionKey)
-    response_json = response.json()
-
-    pipeline.ResultUploadUDID = response_json["udid"]
-    print("UDID obtained.")
-
-    return pipeline
-
-
 # ============== CONVERSION FUNCTIONS ================
 
 def convert_dwg(pipeline):
-    convert_url = pipeline.base_url + "conversion/convert?subscription-key=" + pipeline.subcriptionKey + "&api-version=1.0&udid=" + pipeline.ResultUploadUDID + "&inputType=DWG" 
+    convert_url = pipeline.base_url + "conversions?subscription-key=" + pipeline.subcriptionKey + "&api-version=2.0&udid=" + pipeline.ResultUploadUDID + "&outputOntology=facility-2.0" 
     response = requests.post(url = convert_url ,
                         data={})
     
     if response.status_code == 202:
-        pipeline.ResultConvertOperationsLocation = response.headers["Location"].replace("atlas.", "us.atlas.")
+        pipeline.ResultConvertOperationsLocation = response.headers["Operation-Location"]
         print("DWG Conversion started...")
     else:
         print("Request to convert failed with status code: ", response.status_code)
@@ -124,15 +114,15 @@ def get_conversion_status(pipeline):
     response_json = response.json()
 
     if response_json["status"] == "Succeeded":
-        pipeline.ResultConvertResourceLocation = response_json["resourceLocation"].replace("atlas.", "us.atlas.")
-        pipeline.ResultConvertId = response_json["resourceLocation"].replace("https://atlas.microsoft.com/conversion/", "").replace("?api-version=1.0", "")
-        
+        pipeline.ResultConvertResourceLocation = response.headers["Resource-Location"]
+        pipeline.ResultConvertId = pipeline.ResultConvertResourceLocation.split("/")[-1].split("?")[0]
+
         if "warning" in response_json:
             pipeline.ResultConvertDiagnosticLocation = response_json["properties"]["diagnosticPackageLocation"].replace("https://atlas.microsoft.com/conversion/", "") + "&subscription-key=" + pipeline.subcriptionKey
             with open('ConversionWarnings.json', 'w') as fp:
                 json.dump(response_json["warning"], fp)
             print("DWG conversion successful with warnings! Find warnings in 'ConversionWarnings.json'")
-
+            print("ConversionId: " + pipeline.ResultConvertId)
             diagnosticText = """
                 // Copy the link below and paste it into the browser to download the Diagnosis of your converion 
                 // Once downloaded, unzip the file. It contains a 'ConversionWarningsAndErrors.json' file and a 'VisualizationTool.zip' file 
@@ -147,6 +137,7 @@ def get_conversion_status(pipeline):
             print("Open 'ConversionDiagnosis.txt' on instructions to visualize the warnings")
         else:
             print("DWG conversion successful.")
+            print("ConversionId: " + pipeline.ResultConvertId)
 
     elif response_json["status"] == "Failed":
         print("DWG conversion process failed.")
@@ -157,17 +148,15 @@ def get_conversion_status(pipeline):
         get_conversion_status(pipeline)
     return pipeline
 
-
-
 # ============== DATASET FUNCTIONS ================
 
 def generate_dataset(pipeline):
-    url = pipeline.base_url + "dataset/create?subscription-key=" + pipeline.subcriptionKey + "&api-version=1.0&conversionId=" + pipeline.ResultConvertId + "&type=facility" 
+    url = pipeline.base_url + "datasets?subscription-key=" + pipeline.subcriptionKey + "&api-version=2.0&conversionId=" + pipeline.ResultConvertId 
     response = requests.post(url = url ,
                         data={})
     
     if response.status_code == 202:
-        pipeline.ResultDatasetOperationsLocation = response.headers["Location"].replace("atlas.", "us.atlas.")
+        pipeline.ResultDatasetOperationsLocation = response.headers["Operation-Location"]
         print("Dataset generation started...")
     else:
         print("Request to generate dataset failed with status code: ", response.status_code)
@@ -180,9 +169,10 @@ def get_dataset_status(pipeline):
     response_json = response.json()
 
     if response_json["status"] == "Succeeded":
-        pipeline.ResultDatasetResourceLocation = response_json["resourceLocation"].replace("atlas.", "us.atlas.")
-        pipeline.ResultDatasetId = response_json["resourceLocation"].replace("https://atlas.microsoft.com/dataset/", "").replace("?api-version=1.0", "")
+        pipeline.ResultDatasetResourceLocation = response.headers["Resource-Location"]
+        pipeline.ResultDatasetId = pipeline.ResultDatasetResourceLocation.split("/")[-1].split("?")[0]
         print("Dataset generated successfully.")
+        print("DatasetId: " + pipeline.ResultDatasetId)
     elif response_json["status"] == "Failed":
         print("Dataset generation failed.")
         exit()
@@ -192,18 +182,15 @@ def get_dataset_status(pipeline):
         get_dataset_status(pipeline)
     return pipeline
 
-
-
 # ============== TILESET FUNCTIONS ================
 
 def generate_tileset(pipeline):
-    url = pipeline.base_url + "tileset/create/vector?subscription-key=" + pipeline.subcriptionKey + "&api-version=1.0&datasetId=" + pipeline.ResultDatasetId 
+    url = pipeline.base_url + "tilesets?subscription-key=" + pipeline.subcriptionKey + "&api-version=2.0&datasetId=" + pipeline.ResultDatasetId 
     response = requests.post(url = url ,
                         data={})
     
     if response.status_code == 202:
-        pipeline.ResultTilesetOperationsLocation = response.headers["Location"].replace("atlas.", "us.atlas.")
-        print("Tileset generation started...")
+        pipeline.ResultTilesetOperationsLocation = response.headers["Operation-Location"]
     else:
         print("Request to generate tileset failed with status code: ", response.status_code)
         exit()
@@ -215,8 +202,8 @@ def get_tileset_status(pipeline):
     response_json = response.json()
 
     if response_json["status"] == "Succeeded":
-        pipeline.ResultTilesetResourceLocation = response_json["resourceLocation"].replace("atlas.", "us.atlas.")
-        pipeline.ResultTilesetId = response_json["resourceLocation"].replace("https://atlas.microsoft.com/tileset/", "").replace("?api-version=1.0", "")
+        pipeline.ResultTilesetResourceLocation = response.headers["Resource-Location"]
+        pipeline.ResultTilesetId = pipeline.ResultTilesetResourceLocation.split("/")[-1].split("?")[0]
         
         print("Tileset generated successfully.")
     elif response_json["status"] == "Failed":
@@ -227,7 +214,6 @@ def get_tileset_status(pipeline):
         time.sleep(1)
         get_tileset_status(pipeline)
     return pipeline
-
 
 # ============== MAP DATA AND HTML FUNCTIONS ================
 
@@ -253,7 +239,6 @@ def save_map_data(pipeline):
     with open('AzureMapData.json', 'w') as fp:
         json.dump(map_data, fp)
         print("Generated Map data saved to 'AzureMapData.json'")
-
 
 def save_map_html(pipeline):
     longitude = 0
@@ -344,12 +329,9 @@ def save_map_html(pipeline):
         fp.write(map_text)
         print("Generated Map saved to 'Map.html'")
 
-
 def unzip_dataset(zip_file_path):
     with ZipFile(zip_file_path, 'r') as zipObj:
         zipObj.extractall('dataset')
-
-
 
 def main():
     pipeline = MapsPipeline(subcriptionKey= args["subscriptionKey"])
@@ -357,26 +339,16 @@ def main():
     print("Reading zip file...")
     unzip_dataset(args["zipFile"])
 
-    print("Uploading DWG Zip file...")
     pipeline = upload_dwg(pipeline, args["zipFile"])
-    
-    print("Checking upload status...")
     pipeline = get_upload_status(pipeline)
 
-    print("Obtaining UDID...")
-    pipeline = get_udid(pipeline)
-
-    print("Converting DWG...")
     pipeline = convert_dwg(pipeline)
-
     pipeline = get_conversion_status(pipeline)
 
     pipeline = generate_dataset(pipeline)
-    
     pipeline = get_dataset_status(pipeline)
 
     pipeline = generate_tileset(pipeline)
-
     pipeline = get_tileset_status(pipeline)
 
     save_map_data(pipeline)
